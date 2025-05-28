@@ -1,15 +1,16 @@
 
 import { useState } from 'react';
-import { Plus, Search, Filter } from 'lucide-react';
+import { Plus, Search, Filter, Edit, Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ProductCard } from '@/components/ProductCard';
+import { Badge } from '@/components/ui/badge';
 import { ProductForm } from '@/components/ProductForm';
 import { useProducts } from '@/context/ProductContext';
 import { Product } from '@/types/product';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export default function Products() {
   const { products, categories, addProduct, updateProduct, deleteProduct } = useProducts();
@@ -116,17 +117,80 @@ export default function Products() {
         {filteredProducts.length} produto(s) encontrado(s)
       </div>
 
-      {/* Products Grid */}
+      {/* Products Table */}
       {filteredProducts.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onEdit={handleEditProduct}
-              onDelete={handleDeleteProduct}
-            />
-          ))}
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Produto</TableHead>
+                <TableHead>Categoria</TableHead>
+                <TableHead className="text-center">Quantidade</TableHead>
+                <TableHead className="text-center">Preço unitário</TableHead>
+                <TableHead className="text-center">Valor total</TableHead>
+                <TableHead className="text-center">Status</TableHead>
+                <TableHead className="text-center">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredProducts.map((product) => {
+                const isLowStock = product.stock <= 5;
+                const totalValue = product.salePrice * product.stock;
+                
+                return (
+                  <TableRow key={product.id} className={isLowStock ? 'bg-orange-50' : ''}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{product.name}</p>
+                        <p className="text-sm text-muted-foreground">{product.description}</p>
+                        <p className="text-xs text-muted-foreground font-mono">SKU: {product.sku}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{product.category}</Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        {isLowStock && <AlertTriangle className="h-4 w-4 text-orange-500" />}
+                        <span className={isLowStock ? 'text-orange-500 font-medium' : ''}>{product.stock}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center font-medium">
+                      R$ {product.salePrice.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-center font-medium">
+                      R$ {totalValue.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
+                        {product.status === 'active' ? 'Ativo' : 'Inativo'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditProduct(product)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteProduct(product.id)}
+                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </div>
       ) : (
         <div className="text-center py-12">
