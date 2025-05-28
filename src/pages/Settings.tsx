@@ -5,11 +5,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Settings as SettingsIcon, Download, Upload, Trash2 } from 'lucide-react';
+import { Settings as SettingsIcon, Download, Upload, Trash2, LogOut } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Settings() {
   const { toast } = useToast();
+
+  const handleLogout = () => {
+    window.location.reload();
+    toast({
+      title: 'Logout realizado',
+      description: 'Você foi desconectado do sistema.',
+    });
+  };
 
   const handleExportData = () => {
     toast({
@@ -36,9 +44,15 @@ export default function Settings() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="border-b pb-4">
-        <h1 className="text-3xl font-bold">Configurações</h1>
-        <p className="text-muted-foreground">Gerencie as configurações do sistema</p>
+      <div className="flex justify-between items-center border-b pb-4">
+        <div>
+          <h1 className="text-3xl font-bold">Configurações</h1>
+          <p className="text-muted-foreground">Gerencie as configurações do sistema</p>
+        </div>
+        <Button onClick={handleLogout} variant="destructive" className="flex items-center gap-2">
+          <LogOut className="h-4 w-4" />
+          Logout
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

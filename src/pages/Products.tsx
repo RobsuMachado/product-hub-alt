@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Plus, Search, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -138,17 +139,19 @@ export default function Products() {
 
       {/* Product Form Dialog */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="w-full max-w-2xl h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
+        <DialogContent className="max-w-4xl w-[95vw] h-[85vh] max-h-[600px] flex flex-col p-0">
+          <DialogHeader className="px-6 py-4 border-b">
+            <DialogTitle className="text-xl font-semibold">
               {editingProduct ? 'Editar Produto' : 'Novo Produto'}
             </DialogTitle>
           </DialogHeader>
-          <ProductForm
-            product={editingProduct}
-            onSubmit={handleFormSubmit}
-            onCancel={handleFormCancel}
-          />
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <ProductForm
+              product={editingProduct}
+              onSubmit={handleFormSubmit}
+              onCancel={handleFormCancel}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </div>

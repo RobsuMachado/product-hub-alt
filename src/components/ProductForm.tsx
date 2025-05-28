@@ -67,9 +67,10 @@ export const ProductForm = ({ product, onSubmit, onCancel }: ProductFormProps) =
   };
 
   return (
-    <div className="space-y-6 p-2">
+    <div className="space-y-6">
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Primeira linha - Nome e Categoria */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="name">Nome do Produto *</Label>
             <Input
@@ -101,17 +102,20 @@ export const ProductForm = ({ product, onSubmit, onCancel }: ProductFormProps) =
           </div>
         </div>
 
+        {/* Descrição */}
         <div className="space-y-2">
           <Label htmlFor="description">Descrição</Label>
           <Textarea
             id="description"
             value={formData.description}
             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-            rows={3}
+            rows={2}
+            className="resize-none"
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Segunda linha - Preços e Estoque */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label htmlFor="costPrice">Preço de Custo *</Label>
             <Input
@@ -148,7 +152,8 @@ export const ProductForm = ({ product, onSubmit, onCancel }: ProductFormProps) =
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Terceira linha - SKU e Status */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="sku">SKU *</Label>
             <div className="flex gap-2">
@@ -157,8 +162,9 @@ export const ProductForm = ({ product, onSubmit, onCancel }: ProductFormProps) =
                 value={formData.sku}
                 onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
                 required
+                className="flex-1"
               />
-              <Button type="button" variant="outline" onClick={generateSKU}>
+              <Button type="button" variant="outline" onClick={generateSKU} size="sm">
                 Gerar
               </Button>
             </div>
@@ -181,7 +187,8 @@ export const ProductForm = ({ product, onSubmit, onCancel }: ProductFormProps) =
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-4 border-t">
+        {/* Botões de ação */}
+        <div className="flex justify-end gap-3 pt-4 border-t">
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancelar
           </Button>
