@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Product } from '@/types/product';
 import { useProducts } from '@/context/ProductContext';
+import { Upload } from 'lucide-react';
 
 interface ProductFormProps {
   product?: Product;
@@ -25,6 +26,7 @@ export const ProductForm = ({ product, onSubmit, onCancel }: ProductFormProps) =
     stock: '',
     sku: '',
     status: 'active' as 'active' | 'inactive',
+    imageUrl: '',
   });
 
   useEffect(() => {
@@ -38,6 +40,7 @@ export const ProductForm = ({ product, onSubmit, onCancel }: ProductFormProps) =
         stock: product.stock.toString(),
         sku: product.sku,
         status: product.status,
+        imageUrl: product.imageUrl || '',
       });
     }
   }, [product]);
@@ -54,6 +57,7 @@ export const ProductForm = ({ product, onSubmit, onCancel }: ProductFormProps) =
       stock: parseInt(formData.stock),
       sku: formData.sku,
       status: formData.status,
+      imageUrl: formData.imageUrl,
     };
 
     onSubmit(productData);
@@ -112,6 +116,39 @@ export const ProductForm = ({ product, onSubmit, onCancel }: ProductFormProps) =
             rows={2}
             className="resize-none"
           />
+        </div>
+
+        {/* Imagem do Produto */}
+        <div className="space-y-2">
+          <Label htmlFor="imageUrl">Imagem do Produto</Label>
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <Input
+                id="imageUrl"
+                type="url"
+                placeholder="https://exemplo.com/imagem.jpg"
+                value={formData.imageUrl}
+                onChange={(e) => setFormData(prev => ({ ...prev, imageUrl: e.target.value }))}
+                className="flex-1"
+              />
+              <Button type="button" variant="outline" size="sm" className="flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                Upload
+              </Button>
+            </div>
+            {formData.imageUrl && (
+              <div className="border rounded-lg p-2">
+                <img 
+                  src={formData.imageUrl} 
+                  alt="Preview do produto" 
+                  className="h-24 w-24 object-cover rounded"
+                  onError={(e) => {
+                    e.currentTarget.src = '/placeholder.svg';
+                  }}
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Segunda linha - Preços e Estoque */}

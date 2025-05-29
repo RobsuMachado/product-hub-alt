@@ -140,10 +140,26 @@ export default function Products() {
                 return (
                   <TableRow key={product.id} className={isLowStock ? 'bg-orange-50' : ''}>
                     <TableCell>
-                      <div>
-                        <p className="font-medium">{product.name}</p>
-                        <p className="text-sm text-muted-foreground">{product.description}</p>
-                        <p className="text-xs text-muted-foreground font-mono">SKU: {product.sku}</p>
+                      <div className="flex items-center gap-3">
+                        {product.imageUrl ? (
+                          <img 
+                            src={product.imageUrl} 
+                            alt={product.name}
+                            className="h-12 w-12 object-cover rounded border"
+                            onError={(e) => {
+                              e.currentTarget.src = '/placeholder.svg';
+                            }}
+                          />
+                        ) : (
+                          <div className="h-12 w-12 bg-gray-100 rounded border flex items-center justify-center">
+                            <span className="text-gray-400 text-xs">Sem foto</span>
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-medium">{product.name}</p>
+                          <p className="text-sm text-muted-foreground">{product.description}</p>
+                          <p className="text-xs text-muted-foreground font-mono">SKU: {product.sku}</p>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>

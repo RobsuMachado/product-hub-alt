@@ -9,6 +9,7 @@ export interface Product {
   stock: number;
   sku: string;
   status: 'active' | 'inactive';
+  imageUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }
