@@ -5,11 +5,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Settings as SettingsIcon, Download, Upload, Trash2, LogOut } from 'lucide-react';
+import { Settings as SettingsIcon, Download, Upload, Trash2, LogOut, Smartphone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect } from 'react';
 
 export default function Settings() {
   const { toast } = useToast();
+  const [pixKey, setPixKey] = useState('');
+
+  useEffect(() => {
+    // Carregar chave PIX salva
+    const savedPixKey = localStorage.getItem('defaultPixKey');
+    if (savedPixKey) {
+      setPixKey(savedPixKey);
+    }
+  }, []);
 
   const handleLogout = () => {
     window.location.reload();
@@ -38,6 +48,14 @@ export default function Settings() {
       title: 'Dados limpos',
       description: 'Todos os dados foram removidos.',
       variant: 'destructive',
+    });
+  };
+
+  const handleSaveSettings = () => {
+    localStorage.setItem('defaultPixKey', pixKey);
+    toast({
+      title: 'Configurações salvas',
+      description: 'Suas configurações foram salvas com sucesso.',
     });
   };
 
@@ -82,6 +100,24 @@ export default function Settings() {
 
             <Separator />
 
+            <div className="space-y-2">
+              <Label htmlFor="pixKey" className="flex items-center gap-2">
+                <Smartphone className="h-4 w-4" />
+                Chave PIX Padrão
+              </Label>
+              <Input
+                id="pixKey"
+                value={pixKey}
+                onChange={(e) => setPixKey(e.target.value)}
+                placeholder="Digite sua chave PIX (CPF, email, telefone ou chave aleatória)"
+              />
+              <p className="text-sm text-muted-foreground">
+                Esta chave será usada para gerar QR codes automáticos nas vendas via PIX
+              </p>
+            </div>
+
+            <Separator />
+
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
@@ -114,7 +150,7 @@ export default function Settings() {
               </div>
             </div>
 
-            <Button className="w-full">Salvar Configurações</Button>
+            <Button className="w-full" onClick={handleSaveSettings}>Salvar Configurações</Button>
           </CardContent>
         </Card>
 

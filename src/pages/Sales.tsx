@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Plus, Minus, Search, Trash2, CreditCard, Smartphone, Banknote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,9 +13,10 @@ import { useProducts } from '@/context/ProductContext';
 import { useToast } from '@/hooks/use-toast';
 import { Product } from '@/types/product';
 import { SaleItem } from '@/types/sale';
+import QRCode from 'qrcode';
 
 export default function Sales() {
-  const { products } = useProducts();
+  const { products, updateProduct } = useProducts();
   const { toast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -24,6 +26,7 @@ export default function Sales() {
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'pix'>('cash');
   const [discount, setDiscount] = useState(0);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
 
   // Campos específicos para cada método de pagamento
   const [cardNumber, setCardNumber] = useState('');
@@ -31,7 +34,6 @@ export default function Sales() {
   const [cardCvv, setCardCvv] = useState('');
   const [cardName, setCardName] = useState('');
   const [cashReceived, setCashReceived] = useState(0);
-  const [pixKey, setPixKey] = useState('');
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -41,6 +43,16 @@ export default function Sales() {
 
   const addToCart = (product: Product) => {
     const existingItem = cart.find(item => item.productId === product.id);
+    const currentQuantityInCart = existingItem ? existingItem.quantity : 0;
+
+    if (currentQuantityInCart >= product.stock) {
+      toast({
+        title: 'Estoque insuficiente',
+        description: `Apenas ${product.stock} unidades disponíveis em estoque.`,
+        variant: 'destructive',
+      });
+      return;
+    }
 
     if (existingItem) {
       const updatedCart = cart.map(item =>
@@ -69,10 +81,23 @@ export default function Sales() {
   };
 
   const increaseQuantity = (itemId: string) => {
-    const updatedCart = cart.map(item =>
-      item.id === itemId
-        ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * item.salePrice }
-        : item
+    const item = cart.find(i => i.id === itemId);
+    if (!item) return;
+
+    const product = products.find(p => p.id === item.productId);
+    if (!product || item.quantity >= product.stock) {
+      toast({
+        title: 'Estoque insuficiente',
+        description: `Apenas ${product?.stock || 0} unidades disponíveis em estoque.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const updatedCart = cart.map(cartItem =>
+      cartItem.id === itemId
+        ? { ...cartItem, quantity: cartItem.quantity + 1, total: (cartItem.quantity + 1) * cartItem.salePrice }
+        : cartItem
     );
     setCart(updatedCart);
   };
@@ -95,6 +120,42 @@ export default function Sales() {
     const discountAmount = (subtotal * discount) / 100;
     return subtotal - discountAmount;
   };
+
+  const generatePixQRCode = async () => {
+    const defaultPixKey = localStorage.getItem('defaultPixKey');
+    if (!defaultPixKey) {
+      toast({
+        title: 'Chave PIX não configurada',
+        description: 'Configure uma chave PIX padrão nas configurações.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const total = calculateTotal();
+    const pixPayload = `00020126${defaultPixKey.length.toString().padStart(2, '0')}${defaultPixKey}5204000053039865802BR59${customerName || 'Cliente'}60${total.toFixed(2)}6304`;
+    
+    try {
+      const qrCodeDataUrl = await QRCode.toDataURL(pixPayload, {
+        width: 256,
+        margin: 1,
+      });
+      setQrCodeUrl(qrCodeDataUrl);
+    } catch (error) {
+      console.error('Erro ao gerar QR Code:', error);
+      toast({
+        title: 'Erro ao gerar QR Code',
+        description: 'Não foi possível gerar o QR Code do PIX.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (paymentMethod === 'pix' && showPaymentModal) {
+      generatePixQRCode();
+    }
+  }, [paymentMethod, showPaymentModal]);
 
   const handleCheckout = () => {
     if (cart.length === 0) {
@@ -127,14 +188,25 @@ export default function Sales() {
         return;
       }
     } else if (paymentMethod === 'pix') {
-      if (!pixKey) {
+      const defaultPixKey = localStorage.getItem('defaultPixKey');
+      if (!defaultPixKey) {
         toast({
-          title: 'Chave PIX necessária',
-          description: 'Informe a chave PIX para prosseguir.',
+          title: 'Chave PIX não configurada',
+          description: 'Configure uma chave PIX padrão nas configurações.',
         });
         return;
       }
     }
+
+    // Atualizar estoque dos produtos
+    cart.forEach(item => {
+      const product = products.find(p => p.id === item.productId);
+      if (product) {
+        updateProduct(product.id, {
+          stock: product.stock - item.quantity
+        });
+      }
+    });
 
     // Processar pagamento
     toast({
@@ -155,7 +227,7 @@ export default function Sales() {
     setCardCvv('');
     setCardName('');
     setCashReceived(0);
-    setPixKey('');
+    setQrCodeUrl('');
     setShowPaymentModal(false);
   };
 
@@ -187,62 +259,68 @@ export default function Sales() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto">
-                {filteredProducts.map((product) => (
-                  <Card key={product.id} className="cursor-pointer hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      {/* Imagem em formato 1:1 no topo */}
-                      <div className="mb-4">
-                        <AspectRatio ratio={1}>
-                          {product.imageUrl ? (
-                            <img 
-                              src={product.imageUrl} 
-                              alt={product.name}
-                              className="w-full h-full object-cover rounded border"
-                              onError={(e) => {
-                                e.currentTarget.src = '/placeholder.svg';
-                              }}
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gray-100 rounded border flex items-center justify-center">
-                              <span className="text-gray-400 text-sm">Sem foto</span>
-                            </div>
-                          )}
-                        </AspectRatio>
-                      </div>
+                {filteredProducts.map((product) => {
+                  const itemInCart = cart.find(item => item.productId === product.id);
+                  const quantityInCart = itemInCart ? itemInCart.quantity : 0;
+                  const availableStock = product.stock - quantityInCart;
 
-                      {/* Informações do produto abaixo da imagem */}
-                      <div className="space-y-3">
-                        <div>
-                          <h3 className="font-semibold text-lg line-clamp-1">{product.name}</h3>
-                          <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+                  return (
+                    <Card key={product.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        {/* Imagem em formato 1:1 no topo */}
+                        <div className="mb-4">
+                          <AspectRatio ratio={1}>
+                            {product.imageUrl ? (
+                              <img 
+                                src={product.imageUrl} 
+                                alt={product.name}
+                                className="w-full h-full object-cover rounded border"
+                                onError={(e) => {
+                                  e.currentTarget.src = '/placeholder.svg';
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-100 rounded border flex items-center justify-center">
+                                <span className="text-gray-400 text-sm">Sem foto</span>
+                              </div>
+                            )}
+                          </AspectRatio>
                         </div>
-                        
-                        <Badge variant="secondary" className="text-xs">
-                          {product.category}
-                        </Badge>
-                        
-                        <div className="flex justify-between items-center">
-                          <span className="text-lg font-bold text-green-600">
-                            R$ {product.salePrice.toFixed(2)}
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            Estoque: {product.stock}
-                          </span>
+
+                        {/* Informações do produto abaixo da imagem */}
+                        <div className="space-y-3">
+                          <div>
+                            <h3 className="font-semibold text-lg line-clamp-1">{product.name}</h3>
+                            <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+                          </div>
+                          
+                          <Badge variant="secondary" className="text-xs">
+                            {product.category}
+                          </Badge>
+                          
+                          <div className="flex justify-between items-center">
+                            <span className="text-lg font-bold text-green-600">
+                              R$ {product.salePrice.toFixed(2)}
+                            </span>
+                            <span className="text-sm text-muted-foreground">
+                              Disponível: {availableStock}
+                            </span>
+                          </div>
+                          
+                          <Button 
+                            onClick={() => addToCart(product)}
+                            disabled={availableStock === 0}
+                            className="w-full"
+                            size="sm"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            {availableStock === 0 ? 'Sem estoque' : 'Adicionar'}
+                          </Button>
                         </div>
-                        
-                        <Button 
-                          onClick={() => addToCart(product)}
-                          disabled={product.stock === 0}
-                          className="w-full"
-                          size="sm"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Adicionar
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -465,17 +543,16 @@ export default function Sales() {
             {/* Campos específicos para PIX */}
             {paymentMethod === 'pix' && (
               <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label htmlFor="pixKey">Chave PIX</Label>
-                  <Input
-                    id="pixKey"
-                    value={pixKey}
-                    onChange={(e) => setPixKey(e.target.value)}
-                    placeholder="Digite sua chave PIX"
-                  />
-                </div>
+                {qrCodeUrl && (
+                  <div className="text-center space-y-3">
+                    <p className="text-sm text-blue-700">Escaneie o QR Code para pagar</p>
+                    <div className="flex justify-center">
+                      <img src={qrCodeUrl} alt="QR Code PIX" className="w-48 h-48" />
+                    </div>
+                  </div>
+                )}
                 <div className="p-3 bg-blue-50 rounded-lg text-sm text-blue-700">
-                  Após informar a chave PIX, o cliente deverá realizar o pagamento através do aplicativo do banco.
+                  O cliente deve escanear o QR Code acima com o app do banco para realizar o pagamento via PIX.
                 </div>
               </div>
             )}
