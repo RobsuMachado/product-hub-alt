@@ -1,5 +1,5 @@
 
-import { Home, Package, BarChart3, Settings, Plus, Tag } from 'lucide-react';
+import { Home, Package, BarChart3, Settings, Plus, Tag, ShoppingCart } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Sidebar,
@@ -23,6 +23,11 @@ const menuItems = [
     title: 'Produtos',
     url: '/products',
     icon: Package,
+  },
+  {
+    title: 'Vendas',
+    url: '/sales',
+    icon: ShoppingCart,
   },
   {
     title: 'Categorias',
